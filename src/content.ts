@@ -34,5 +34,3 @@ export const FAQ: [string, string][] = [
   ["Are tickets and payments live?", "Ticket availability, prices and payment steps depend on each event. Use the event contact option to request details and wait for confirmation before paying."],
 ];
 
-// Leave empty until the client supplies the approved WhatsApp number (digits only, e.g. 9715XXXXXXXX).
-export const WHATSAPP_NUMBER = "";

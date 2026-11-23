@@ -16,6 +16,20 @@ export interface EventItem {
   date: string; // ISO date
   endDate?: string;
   time: string;
+  endTime?: string;
+  gatesOpenTime?: string;
+  ticketPrice?: number;
+  ticketCurrency?: string;
+  ticketUrl?: string;
+  reservationPhone?: string;
+  creatorPassNote?: string;
+  creatorPassFormUrl?: string;
+  ageRestriction?: string;
+  hashtag?: string;
+  applicationDeadline?: string;
+  actionLabel?: string;
+  images?: string[];
+  videos?: string[];
   venue: string;
   area: string;
   category: string;

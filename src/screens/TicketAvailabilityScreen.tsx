@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, Text, View } from "react-native";
 import { EventItem } from "../data";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { Card, Eyebrow, formatDate, getAvailableEvents, H1, H2, P, requestCategoryOnWhatsApp, Screen, TICKET_CATEGORIES } from "../ui";
+import { Button, Card, Eyebrow, formatDate, getAvailableEvents, H1, P, Screen } from "../ui";
 
 export function TicketAvailabilityScreen() {
   const t = useTheme();
@@ -29,32 +29,18 @@ export function TicketAvailabilityScreen() {
             <Ionicons name="ticket" size={22} color={t.primary} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: fonts.bodyBold, color: t.text }}>Event places remaining: {Math.max(selected.capacity - selected.confirmed, 0)}</Text>
-              <Text style={{ fontFamily: fonts.body, color: t.muted, marginTop: 3 }}>Demo event capacity. Ask the team to confirm live ticket inventory.</Text>
+              <Text style={{ fontFamily: fonts.body, color: t.muted, marginTop: 3 }}>{typeof selected.ticketPrice === "number" && selected.ticketPrice > 0 ? `Listed ticket price: ${selected.ticketCurrency || "AED"} ${selected.ticketPrice}.` : "Ask the event team to confirm current ticket availability and price."}</Text>
             </View>
           </Card>
-          <H2>Choose a ticket category</H2>
-          <P>Category-level inventory and pricing need confirmation by the event team.</P>
-          <View style={{ gap: 10, marginTop: 14 }}>
-            {TICKET_CATEGORIES.map((category) => (
-              <Card key={category.name} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.display, fontSize: 25, color: t.text }}>{category.name}</Text>
-                  <Text style={{ fontFamily: fonts.body, color: t.muted }}>Availability: confirm with team · Price: {category.price}</Text>
-                </View>
-                <Pressable onPress={() => requestCategoryOnWhatsApp(selected, category.name)} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#25D366", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10 }}>
-                  <Ionicons name="logo-whatsapp" size={17} color="#fff" />
-                  <Text style={{ color: "#fff", fontFamily: fonts.bodyBold, fontSize: 12 }}>Request</Text>
-                </Pressable>
-              </Card>
-            ))}
-          </View>
-          <P style={{ marginTop: 16 }}>WhatsApp opens a request for the event and category. The team must confirm availability, price and payment, then send the ticket PDF.</P>
+          {selected.ticketUrl ? <Button title={selected.actionLabel || "Get tickets"} icon="open-outline" style={{ marginTop: 16 }} onPress={() => void Linking.openURL(selected.ticketUrl!).catch(() => Alert.alert("Could not open ticket link", "Please try again later."))} /> : null}
+          {selected.reservationPhone ? <Button title="Call about tickets" icon="call-outline" variant={selected.ticketUrl ? "outline" : "solid"} style={{ marginTop: 12 }} onPress={() => void Linking.openURL(`tel:${selected.reservationPhone}`).catch(() => Alert.alert("Could not start a call", "Please try again later."))} /> : null}
+          {!selected.ticketUrl && !selected.reservationPhone ? <Button title="Open RSVP DXB contact page" icon="open-outline" variant="outline" style={{ marginTop: 12 }} onPress={() => void Linking.openURL("https://www.rsvpdxb.com/contact").catch(() => Alert.alert("Could not open contact page", "Please visit www.rsvpdxb.com/contact."))} /> : null}
         </>
       ) : (
         <>
           <Eyebrow>Tickets</Eyebrow>
           <H1>Available events</H1>
-          <P>Upcoming published events with remaining demo places. Select an event to view ticket categories.</P>
+          <P>Upcoming published events with remaining places. Select an event for its ticket link or ask the team for current availability.</P>
           {available.length ? available.map((ev) => (
             <Pressable key={ev.id} onPress={() => setSelected(ev)} accessibilityRole="button" style={{ marginTop: 14 }}>
               <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated, Easing, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  Animated, Easing, Image, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from "react-native";
-import { WHATSAPP_NUMBER } from "./content";
 import { EventItem } from "./data";
 import { fonts, useTheme } from "./theme";
 
@@ -93,30 +92,6 @@ export function formatDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function shareEventDetailsOnWhatsApp(ev: EventItem) {
-  const text = encodeURIComponent(`${ev.title} — ${formatDate(ev.date)} ${ev.time} at ${ev.venue}. RSVP on the RSVP DXB app.`);
-  const url = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}` : `https://wa.me/?text=${text}`;
-  Linking.openURL(url);
-}
-
-export function requestTicketOnWhatsApp(ev: EventItem) {
-  const text = encodeURIComponent(`Hi RSVP DXB! I'd like to request a ticket for ${ev.title} on ${formatDate(ev.date)} at ${ev.time}, at ${ev.venue}. Please let me know if a place is available. Thank you!`);
-  const url = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}` : `https://wa.me/?text=${text}`;
-  Linking.openURL(url);
-}
-
-export const TICKET_CATEGORIES = [
-  { name: "Platinum", available: 2, price: "Contact us" },
-  { name: "Gold", available: 5, price: "Contact us" },
-  { name: "Silver", available: 8, price: "Contact us" },
-] as const;
-
-export function requestCategoryOnWhatsApp(ev: EventItem, category: string) {
-  const text = encodeURIComponent(`Hi RSVP DXB! I'd like to request 1 ${category} ticket for ${ev.title} on ${formatDate(ev.date)} at ${ev.time}, at ${ev.venue}. Please confirm current availability, price and payment steps. Please send my ticket PDF on WhatsApp after confirmation. Thank you!`);
-  const url = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}` : `https://wa.me/?text=${text}`;
-  Linking.openURL(url);
-}
-
 export function getAvailableEvents(events: EventItem[]) {
   const now = Date.now();
   return events
@@ -130,8 +105,8 @@ export function getDubaiToday() {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export function shareOnWhatsApp(ev: EventItem) {
-  requestTicketOnWhatsApp(ev);
+export function shareEvent(ev: EventItem) {
+  void Share.share({ message: `${ev.title} — ${formatDate(ev.date)} ${ev.time} at ${ev.venue}. RSVP DXB.` });
 }
 
 export function getLastMinuteEvent(events: EventItem[]) {
@@ -143,7 +118,7 @@ export function getLastMinuteEvent(events: EventItem[]) {
 }
 
 /** Event tile with press zoom + highlight. */
-export function EventTile({ ev, onPress, onWhatsApp, width = 220 }: { ev: EventItem; onPress: () => void; onWhatsApp?: () => void; width?: number }) {
+export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress: () => void; width?: number }) {
   const t = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const to = (v: number) => Animated.spring(scale, { toValue: v, useNativeDriver: true, friction: 6 }).start();
@@ -159,18 +134,12 @@ export function EventTile({ ev, onPress, onWhatsApp, width = 220 }: { ev: EventI
           <Text style={{ color: "#F2DFC3", fontFamily: fonts.body, fontSize: 12 }}>{formatDate(ev.date)} · {ev.area}</Text>
         </View>
       </Pressable>
-      {onWhatsApp ? (
-        <Pressable onPress={onWhatsApp} accessibilityRole="button" style={{ marginTop: 8, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 10, backgroundColor: "#25D366", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
-          <Ionicons name="logo-whatsapp" size={16} color="#fff" />
-          <Text numberOfLines={1} style={{ color: "#fff", fontFamily: fonts.bodyBold, fontSize: 12 }}>Request ticket</Text>
-        </Pressable>
-      ) : null}
     </Animated.View>
   );
 }
 
 /** Endless auto-scrolling row. direction "left" = right-to-left movement. */
-export function Marquee({ items, direction, onOpen, onWhatsApp }: { items: EventItem[]; direction: "left" | "right"; onOpen: (id: string) => void; onWhatsApp?: (ev: EventItem) => void }) {
+export function Marquee({ items, direction, onOpen }: { items: EventItem[]; direction: "left" | "right"; onOpen: (id: string) => void }) {
   const tile = 220 + 14;
   const rowWidth = tile * items.length;
   const x = useRef(new Animated.Value(direction === "left" ? 0 : -rowWidth)).current;
@@ -205,7 +174,7 @@ export function Marquee({ items, direction, onOpen, onWhatsApp }: { items: Event
       style={{ overflow: "hidden", marginHorizontal: -18 }}
     >
       <Animated.View style={{ flexDirection: "row", transform: [{ translateX: x }] }}>
-        {doubled.map((ev, i) => <EventTile key={ev.id + i} ev={ev} onPress={() => onOpen(ev.id)} onWhatsApp={onWhatsApp ? () => onWhatsApp(ev) : undefined} />)}
+        {doubled.map((ev, i) => <EventTile key={ev.id + i} ev={ev} onPress={() => onOpen(ev.id)} />)}
       </Animated.View>
     </View>
   );

@@ -17,6 +17,9 @@ export function MeScreen() {
   const [tab, setTab] = useState<Tab>("overview");
   const [name, setName] = useState(member?.name ?? "");
   const [phone, setPhone] = useState(member?.phone ?? "");
+  const [city, setCity] = useState(member?.city ?? "Dubai");
+  const [handle, setHandle] = useState(member?.handle ?? "");
+  const [followers, setFollowers] = useState(String(member?.followers ?? 0));
   const [cur, setCur] = useState("");
   const [nw, setNw] = useState("");
   const [cf, setCf] = useState("");
@@ -24,7 +27,10 @@ export function MeScreen() {
   useEffect(() => {
     setName(member?.name ?? "");
     setPhone(member?.phone ?? "");
-  }, [member?.memberId, member?.name, member?.phone]);
+    setCity(member?.city ?? "Dubai");
+    setHandle(member?.handle ?? "");
+    setFollowers(String(member?.followers ?? 0));
+  }, [member?.memberId, member?.name, member?.phone, member?.city, member?.handle, member?.followers]);
 
   if (!member) {
     return (
@@ -117,7 +123,15 @@ export function MeScreen() {
           <H2>Details</H2>
           <Field label="Full name" value={name} onChangeText={setName} />
           <Field label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          <Button title="Save changes" onPress={async () => { try { await updateMember({ name, phone }); Alert.alert("Saved", "Your profile was updated."); } catch (error) { Alert.alert("Could not save", error instanceof Error ? error.message : "Please try again."); } }} />
+          <Field label="City" value={city} onChangeText={setCity} />
+          <Field label="Instagram username" value={handle} onChangeText={setHandle} autoCapitalize="none" />
+          <Field label="Instagram followers" value={followers} onChangeText={setFollowers} keyboardType="number-pad" />
+          <Button title="Save changes" onPress={async () => {
+            const count = Number(followers.replace(/[ ,]/g, ""));
+            if (!Number.isSafeInteger(count) || count < 0) return Alert.alert("Check follower count", "Enter a whole number of zero or more.");
+            try { await updateMember({ name, phone, city, handle: handle.replace(/^@+/, ""), followers: count }); Alert.alert("Saved", "Your profile was updated."); }
+            catch (error) { Alert.alert("Could not save", error instanceof Error ? error.message : "Please try again."); }
+          }} />
 
           <H2>Update password</H2>
           <PasswordField label="Current password" value={cur} onChangeText={setCur} />

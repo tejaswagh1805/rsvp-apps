@@ -22,7 +22,7 @@ interface MemberProfile {
 }
 
 type ApiMember = { id: string; name: string; email: string; track: string; rank: string; points: number; city?: string; mobile?: string; handle?: string; followers?: number; memberNumber?: number; accessToken?: string };
-type ApiEvent = Omit<EventItem, "image"> & { image?: string; imageGallery?: string[]; imageData?: string; video?: string };
+type ApiEvent = Omit<EventItem, "image"> & { image?: string; imageGallery?: string[]; imageData?: string; video?: string; videoUrlList?: string[] };
 export type PeopleProfile = {
   id: string;
   category: string;
@@ -70,7 +70,8 @@ function mapEvent(item: ApiEvent): EventItem {
   const image = remoteImage?.startsWith("http") || remoteImage?.startsWith("data:")
     ? { uri: remoteImage }
     : EVENT_IMAGES[item.id] ?? EVENT_IMAGES["atlantis-chef-table"];
-  return { ...item, image } as EventItem;
+  const videos = item.videoUrlList ?? (item.video ? [item.video] : []);
+  return { ...item, endDate: item.endDate ?? item.date, image, videos } as EventItem;
 }
 
 async function api<T>(path: string, input?: unknown): Promise<T> {
@@ -100,7 +101,7 @@ interface Store {
   register: (input: { name: string; email: string; password: string; track: string }) => Promise<void>;
   signOut: () => Promise<void>;
   updateMember: (patch: Partial<MemberProfile>) => Promise<void>;
-  rsvp: (eventId: string, deliverablesAgreed?: boolean) => Promise<RsvpState>;
+  rsvp: (eventId: string, deliverablesAgreed?: boolean, guestNames?: string[]) => Promise<RsvpState>;
   cancelRsvp: (eventId: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   refreshEvents: () => Promise<void>;
@@ -205,13 +206,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         name: patch.name ?? current.name,
         city: current.city || "Dubai",
         mobile: patch.phone ?? current.phone,
-        instagram: current.handle ?? "",
-        followers: String(current.followers ?? 0),
+        instagram: patch.handle ?? current.handle ?? "",
+        followers: String(patch.followers ?? current.followers ?? 0),
       });
       setMember((value) => value ? { ...value, name: result.name, phone: result.mobile ?? value.phone, city: result.city, handle: result.handle, followers: result.followers } : value);
     },
-    rsvp: async (eventId, deliverablesAgreed = false) => {
-      const result = await api<{ status: RsvpState }>("/api/mobile/rsvps", { eventId, guestNames: [], deliverablesAgreed });
+    rsvp: async (eventId, deliverablesAgreed = false, guestNames = []) => {
+      const result = await api<{ status: RsvpState }>("/api/mobile/rsvps", { eventId, guestNames, deliverablesAgreed });
       setRsvps((items) => ({ ...items, [eventId]: result.status }));
       return result.status;
     },

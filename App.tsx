@@ -7,9 +7,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import { ActivityIndicator, useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { WHATSAPP_NUMBER } from "./src/content";
 import { ArtistsScreen } from "./src/screens/ArtistsScreen";
 import { AuthScreens } from "./src/screens/AuthScreens";
 import { EventDetailScreen } from "./src/screens/EventDetailScreen";
@@ -70,18 +69,6 @@ function Tabs() {
   );
 }
 
-function WhatsAppBubble() {
-  return (
-    <Pressable
-      accessibilityLabel="Chat on WhatsApp"
-      onPress={() => Linking.openURL(WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : "https://wa.me/")}
-      style={styles.wa}
-    >
-      <Ionicons name="logo-whatsapp" size={30} color="#fff" />
-    </Pressable>
-  );
-}
-
 function Root() {
   const t = useTheme();
   const scheme = useColorScheme();
@@ -104,7 +91,6 @@ function Root() {
         <Stack.Screen name="FAQ" options={{ title: "FAQ" }}>{() => <InfoScreen page="faq" />}</Stack.Screen>
         <Stack.Screen name="Contact" options={{ title: "Find us · Talk to us" }}>{() => <InfoScreen page="contact" />}</Stack.Screen>
       </Stack.Navigator>
-      <WhatsAppBubble />
     </NavigationContainer>
   );
 }
@@ -122,10 +108,3 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  wa: {
-    position: "absolute", right: 18, bottom: 84, width: 58, height: 58, borderRadius: 29,
-    backgroundColor: "#25D366", alignItems: "center", justifyContent: "center",
-    shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6,
-  },
-});
