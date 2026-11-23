@@ -3,9 +3,7 @@
     "name": "RSVP DXB",
     "slug": "rsvp",
     "version": "1.0.0",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/0c15257e-693b-4d40-a8cc-3d49b55cc9bd"
     },

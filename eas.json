@@ -6,6 +6,9 @@
     "preview": {
       "channel": "preview",
       "distribution": "internal",
+      "ios": {
+        "distribution": "internal"
+      },
       "android": {
         "buildType": "apk"
       }
