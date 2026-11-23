@@ -4,6 +4,7 @@ import { EVENTS, EventItem, RsvpState } from "./data";
 
 const API_URL = (process.env.EXPO_PUBLIC_RSVP_API_URL || "https://d1f5sjkm09kt76.cloudfront.net").replace(/\/$/, "");
 const KEY = "rsvp-dxb-state-v2";
+const API_TIMEOUT_MS = 12_000;
 let accessToken: string | null = null;
 
 interface MemberProfile {
@@ -75,18 +76,32 @@ function mapEvent(item: ApiEvent): EventItem {
 }
 
 async function api<T>(path: string, input?: unknown): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    method: input === undefined ? "GET" : "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    ...(input === undefined ? {} : { body: JSON.stringify(input) }),
-  });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error || `Request failed (${response.status}).`);
-  return body as T;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: input === undefined ? "GET" : "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      ...(input === undefined ? {} : { body: JSON.stringify(input) }),
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(body?.error || `Request failed (${response.status}).`);
+      Object.assign(error, { status: response.status });
+      throw error;
+    }
+    return body as T;
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("The server is taking too long to respond. Please try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 interface Store {
@@ -147,24 +162,49 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // A damaged local profile cache should not prevent a member from signing in.
     }
     setMember({ name: current.name, email: current.email, phone: current.mobile ?? "", city: current.city, handle: current.handle, followers: current.followers, track: current.track, rank: current.rank, points: current.points, memberId: current.id, memberNumber: current.memberNumber, photo });
-    setRsvps(await api<Record<string, RsvpState>>("/api/mobile/rsvps"));
+    const savedRsvps = await api<Record<string, RsvpState>>("/api/mobile/rsvps").catch(() => null);
+    if (savedRsvps) setRsvps(savedRsvps);
   };
 
   useEffect(() => {
     let active = true;
-    void Promise.all([AsyncStorage.getItem(`${KEY}-token`), refreshEvents().catch(() => undefined), refreshPeopleProfiles().catch(() => undefined), refreshVenues().catch(() => undefined)])
-      .then(async ([token]) => {
+    void (async () => {
+      try {
+        const [token, savedProfile] = await Promise.all([
+          AsyncStorage.getItem(`${KEY}-token`).catch(() => null),
+          AsyncStorage.getItem(`${KEY}-profile`).catch(() => null),
+        ]);
         if (!active) return;
         accessToken = token;
-        if (token) {
-          try { await refreshMemberData(); }
-          catch { accessToken = null; await AsyncStorage.removeItem(`${KEY}-token`); await AsyncStorage.removeItem(`${KEY}-profile`); }
-        } else {
-          await AsyncStorage.removeItem(`${KEY}-profile`);
+        if (token && savedProfile) {
+          try {
+            const cached = JSON.parse(savedProfile) as Partial<MemberProfile>;
+            if (typeof cached.memberId === "string" && typeof cached.name === "string" && typeof cached.email === "string") {
+              setMember(cached as MemberProfile);
+            }
+          } catch {
+            // Ignore a damaged profile cache and continue with the saved session.
+          }
         }
-      })
-      .catch(() => undefined)
-      .finally(() => { if (active) setReady(true); });
+      } finally {
+        if (active) setReady(true);
+      }
+
+      // Render immediately from local state. Refresh remote data without blocking app startup.
+      void Promise.allSettled([refreshEvents(), refreshPeopleProfiles(), refreshVenues()]);
+      if (accessToken) {
+        void refreshMemberData().catch((error: unknown) => {
+          if (!active || (error as { status?: number })?.status !== 401) return;
+          accessToken = null;
+          setMember(null);
+          setRsvps({});
+          void AsyncStorage.removeItem(`${KEY}-token`);
+          void AsyncStorage.removeItem(`${KEY}-profile`);
+        });
+      }
+    })().catch(() => {
+      if (active) setReady(true);
+    });
     return () => { active = false; };
   }, []);
 
