@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, Image, Pressable, Text, View } from "react-native";
 import { RANKS } from "../data";
 import { useStore } from "../store";
@@ -20,6 +20,11 @@ export function MeScreen() {
   const [cur, setCur] = useState("");
   const [nw, setNw] = useState("");
   const [cf, setCf] = useState("");
+
+  useEffect(() => {
+    setName(member?.name ?? "");
+    setPhone(member?.phone ?? "");
+  }, [member?.memberId, member?.name, member?.phone]);
 
   if (!member) {
     return (

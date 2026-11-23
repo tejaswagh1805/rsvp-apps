@@ -16,7 +16,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.rsvpdxb.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Choose a profile picture for your RSVP DXB account."
+        "NSPhotoLibraryUsageDescription": "Choose a profile picture for your RSVP DXB account.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -24,7 +25,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4B2A10"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [

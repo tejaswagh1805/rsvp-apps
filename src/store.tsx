@@ -135,7 +135,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const refreshMemberData = async () => {
     const current = await api<ApiMember>("/api/mobile/session");
-    setMember({ name: current.name, email: current.email, phone: current.mobile ?? "", city: current.city, handle: current.handle, followers: current.followers, track: current.track, rank: current.rank, points: current.points, memberId: current.id, memberNumber: current.memberNumber });
+    let photo: string | undefined;
+    try {
+      const savedProfile = await AsyncStorage.getItem(`${KEY}-profile`);
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile) as { memberId?: unknown; photo?: unknown };
+        if (parsed.memberId === current.id && typeof parsed.photo === "string") photo = parsed.photo;
+      }
+    } catch {
+      // A damaged local profile cache should not prevent a member from signing in.
+    }
+    setMember({ name: current.name, email: current.email, phone: current.mobile ?? "", city: current.city, handle: current.handle, followers: current.followers, track: current.track, rank: current.rank, points: current.points, memberId: current.id, memberNumber: current.memberNumber, photo });
     setRsvps(await api<Record<string, RsvpState>>("/api/mobile/rsvps"));
   };
 

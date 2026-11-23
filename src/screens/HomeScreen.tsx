@@ -85,9 +85,10 @@ export function HomeScreen() {
     void Promise.all([refreshEvents().catch(() => undefined), refreshPeopleProfiles().catch(() => undefined), refreshVenues().catch(() => undefined)]);
   }, [refreshEvents, refreshPeopleProfiles, refreshVenues]));
 
-  // 15 tiles per slider, built from the demo events.
-  const fifteen = useMemo(() => Array.from({ length: 15 }, (_, i) => ({ ...events[i % events.length], id: events[i % events.length].id })), [events]);
-  const topPicks = useMemo(() => [...fifteen].reverse(), [fifteen]);
+  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent !== false), [events]);
+  const fifteen = useMemo(() => latestEvents.length ? Array.from({ length: 15 }, (_, i) => ({ ...latestEvents[i % latestEvents.length], id: latestEvents[i % latestEvents.length].id })) : [], [latestEvents]);
+  const selectedPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick), [events]);
+  const topPicks = useMemo(() => selectedPicks.length ? Array.from({ length: 15 }, (_, i) => ({ ...selectedPicks[i % selectedPicks.length], id: selectedPicks[i % selectedPicks.length].id })) : [], [selectedPicks]);
   const open = (id: string) => nav.navigate("Event", { id });
 
   return (
@@ -117,13 +118,13 @@ export function HomeScreen() {
           <View style={{ marginBottom: 34 }}>
             <Eyebrow>Fresh on the list</Eyebrow>
             <H2 style={{ marginTop: 4 }}>Latest events</H2>
-            <Marquee items={fifteen} direction="left" onOpen={open} onWhatsApp={requestTicketOnWhatsApp} />
+            {fifteen.length ? <Marquee items={fifteen} direction="left" onOpen={open} onWhatsApp={requestTicketOnWhatsApp} /> : <P>No latest events are available right now.</P>}
           </View>
 
           <View style={{ marginBottom: 28 }}>
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>RSVP top picks</H2>
-            <Marquee items={topPicks} direction="right" onOpen={open} />
+            {topPicks.length ? <Marquee items={topPicks} direction="right" onOpen={open} /> : <P>No RSVP Top Picks have been selected yet.</P>}
           </View>
 
           {venues?.some((venue) => venue.featured) ? <View style={{ marginBottom: 28 }}>
