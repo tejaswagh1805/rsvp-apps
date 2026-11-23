@@ -1,9 +1,9 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React from "react";
-import { Alert, Image, Linking, Text, View } from "react-native";
+import { Alert, Linking, Text, View } from "react-native";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { Button, Card, Eyebrow, Field, H1, H2, P, Screen, formatDate, getDubaiToday, shareEvent } from "../ui";
+import { Button, Card, Eyebrow, EventImage, Field, H1, H2, P, Screen, formatDate, getDubaiToday, shareEvent } from "../ui";
 
 export function EventDetailScreen() {
   const t = useTheme();
@@ -35,7 +35,7 @@ export function EventDetailScreen() {
 
   return (
     <Screen>
-      <Image source={ev.image} style={{ width: "100%", height: 260, borderRadius: 22, marginBottom: 16 }} />
+      <EventImage event={ev} style={{ width: "100%", height: 260, borderRadius: 22, marginBottom: 16 }} />
       <Eyebrow>{ev.category} · {ev.brand}</Eyebrow>
       <H1>{ev.title}</H1>
       <P>{formatDate(ev.date)} · {ev.time}{"\n"}{ev.venue}, {ev.area}</P>

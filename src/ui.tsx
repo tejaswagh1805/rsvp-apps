@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated, Easing, Image, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  Animated, Easing, Image, ImageStyle, ImageSourcePropType, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from "react-native";
 import { EventItem } from "./data";
 import { fonts, useTheme } from "./theme";
@@ -92,6 +92,20 @@ export function formatDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+export function EventImage({ event, style, resizeMode = "cover" }: { event: EventItem; style: ImageStyle; resizeMode?: "cover" | "contain" | "stretch" | "repeat" | "center" }) {
+  const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => setRemoteFailed(false), [event.id, event.image]);
+  const fallback = event.imageFallback as ImageSourcePropType | undefined;
+  return (
+    <Image
+      source={remoteFailed && fallback ? fallback : event.image}
+      style={style}
+      resizeMode={resizeMode}
+      onError={() => { if (fallback) setRemoteFailed(true); }}
+    />
+  );
+}
+
 export function getAvailableEvents(events: EventItem[]) {
   const now = Date.now();
   return events
@@ -125,7 +139,7 @@ export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress
   return (
     <Animated.View style={{ width, marginRight: 14, transform: [{ scale }] }}>
       <Pressable onPress={onPress} onPressIn={() => to(1.03)} onPressOut={() => to(1)}>
-        <Image source={ev.image} style={{ width, height: width * 1.2, borderRadius: 20 }} />
+        <EventImage event={ev} style={{ width, height: width * 1.2, borderRadius: 20 }} />
         <View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, { justifyContent: "flex-end", padding: 12, borderRadius: 20, backgroundColor: "rgba(46,26,11,0.25)" }]}>
           <View style={{ alignSelf: "flex-start", backgroundColor: t.primary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 6 }}>
             <Text style={{ color: t.primaryText, fontFamily: fonts.bodyBold, fontSize: 11 }}>{ev.category}</Text>

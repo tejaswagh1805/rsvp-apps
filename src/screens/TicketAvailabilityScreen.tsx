@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
-import { Alert, Image, Linking, Pressable, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import { EventItem } from "../data";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { Button, Card, Eyebrow, formatDate, getAvailableEvents, H1, P, Screen } from "../ui";
+import { Button, Card, Eyebrow, EventImage, formatDate, getAvailableEvents, H1, P, Screen } from "../ui";
 
 export function TicketAvailabilityScreen() {
   const t = useTheme();
@@ -44,7 +44,7 @@ export function TicketAvailabilityScreen() {
           {available.length ? available.map((ev) => (
             <Pressable key={ev.id} onPress={() => setSelected(ev)} accessibilityRole="button" style={{ marginTop: 14 }}>
               <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <Image source={ev.image} style={{ width: 82, height: 96, borderRadius: 14 }} />
+                <EventImage event={ev} style={{ width: 82, height: 96, borderRadius: 14 }} />
                 <View style={{ flex: 1 }}>
                   <Eyebrow>{ev.category} · {ev.brand}</Eyebrow>
                   <Text style={{ fontFamily: fonts.display, fontSize: 22, color: t.text, marginTop: 4 }}>{ev.title}</Text>

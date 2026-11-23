@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ARTISTS } from "../content";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { Button, Eyebrow, H2, Marquee, P, Pulse } from "../ui";
+import { Button, Eyebrow, EventImage, H2, Marquee, P, Pulse } from "../ui";
 import { ArtistCard } from "./ArtistsScreen";
 import { VenuePickTile } from "./VenueScreen";
 
@@ -101,7 +101,7 @@ export function HomeScreen() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
             {events.slice(0, 6).map((ev) => (
               <Pressable key={ev.id} onPress={() => open(ev.id)} style={{ width: (W - 46) / 2 }}>
-                <Image source={ev.image} style={{ width: "100%", height: 150, borderRadius: 16 }} />
+                <EventImage event={ev} style={{ width: "100%", height: 150, borderRadius: 16 }} />
               </Pressable>
             ))}
           </View>

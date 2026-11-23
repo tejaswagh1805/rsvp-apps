@@ -71,8 +71,9 @@ function mapEvent(item: ApiEvent): EventItem {
   const image = remoteImage?.startsWith("http") || remoteImage?.startsWith("data:")
     ? { uri: remoteImage }
     : EVENT_IMAGES[item.id] ?? EVENT_IMAGES["atlantis-chef-table"];
+  const imageFallback = EVENT_IMAGES[item.id] ?? EVENT_IMAGES["atlantis-chef-table"];
   const videos = item.videoUrlList ?? (item.video ? [item.video] : []);
-  return { ...item, endDate: item.endDate ?? item.date, image, videos } as EventItem;
+  return { ...item, endDate: item.endDate ?? item.date, image, imageFallback, videos } as EventItem;
 }
 
 async function api<T>(path: string, input?: unknown): Promise<T> {

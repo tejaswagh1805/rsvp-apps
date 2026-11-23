@@ -1,9 +1,9 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
-import { FlatList, Image, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { formatDate, getDubaiToday } from "../ui";
+import { EventImage, formatDate, getDubaiToday } from "../ui";
 
 export function EventsScreen() {
   const t = useTheme();
@@ -37,7 +37,7 @@ export function EventsScreen() {
         data={list} keyExtractor={(e) => e.id} contentContainerStyle={{ padding: 14, paddingTop: 0, gap: 14, paddingBottom: 100 }}
         renderItem={({ item: ev }) => (
           <Pressable onPress={() => nav.navigate("Event", { id: ev.id })} style={{ backgroundColor: t.surface, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: t.border }}>
-            <Image source={ev.image} style={{ width: "100%", height: 180 }} />
+            <EventImage event={ev} style={{ width: "100%", height: 180 }} />
             <View style={{ padding: 14 }}>
               <Text style={{ fontFamily: fonts.bodyBold, color: t.primary, fontSize: 12, letterSpacing: 1.5 }}>{ev.category.toUpperCase()} · {ev.brand}</Text>
               <Text style={{ fontFamily: fonts.display, fontSize: 28, color: t.text }}>{ev.title}</Text>

@@ -30,6 +30,7 @@ export interface EventItem {
   actionLabel?: string;
   images?: string[];
   videos?: string[];
+  imageFallback?: any;
   venue: string;
   area: string;
   category: string;
