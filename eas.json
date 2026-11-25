@@ -7,7 +7,7 @@
       "channel": "preview",
       "distribution": "internal",
       "ios": {
-        "distribution": "internal"
+        "simulator": true
       },
       "android": {
         "buildType": "apk"
