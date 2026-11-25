@@ -52,9 +52,9 @@ export function EventDetailScreen() {
 
   const submitRsvp = (deliverablesAgreed = false) => {
     void rsvp(event.id, deliverablesAgreed, guestNames)
-      .then((status) => Alert.alert(
+      .then(({ status, emailSent }) => Alert.alert(
         status === "pending" ? "Request submitted" : status === "accepted" || status === "going" ? "You're on the list" : "Request updated",
-        status === "pending" ? "The team will review your RSVP request." : status === "accepted" || status === "going" ? "Your RSVP has been accepted." : "Your RSVP status has been updated.",
+        status === "pending" ? (creatorDeliverables ? (emailSent === false ? "Your request is saved, but we could not email the creator task link. Ask the RSVP team to resend it." : "The team will review your RSVP request. Check your email for the creator task submission link.") : "The team will review your RSVP request.") : status === "accepted" || status === "going" ? "Your RSVP has been accepted." : "Your RSVP status has been updated.",
       ))
       .catch((error) => Alert.alert("RSVP failed", error instanceof Error ? error.message : "Please try again."));
   };

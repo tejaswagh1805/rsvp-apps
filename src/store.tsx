@@ -120,7 +120,7 @@ interface Store {
   register: (input: { name: string; email: string; password: string; track: string }) => Promise<void>;
   signOut: () => Promise<void>;
   updateMember: (patch: Partial<MemberProfile>) => Promise<void>;
-  rsvp: (eventId: string, deliverablesAgreed?: boolean, guestNames?: string[]) => Promise<RsvpState>;
+  rsvp: (eventId: string, deliverablesAgreed?: boolean, guestNames?: string[]) => Promise<{ status: RsvpState; emailSent?: boolean; emailStatus?: string }>;
   cancelRsvp: (eventId: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   refreshEvents: () => Promise<void>;
@@ -271,9 +271,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setMember((value) => value ? { ...value, name: result.name, phone: result.mobile ?? value.phone, city: result.city, handle: result.handle, followers: result.followers } : value);
     },
     rsvp: async (eventId, deliverablesAgreed = false, guestNames = []) => {
-      const result = await api<{ status: RsvpState }>("/api/mobile/rsvps", { eventId, guestNames, deliverablesAgreed });
+      const result = await api<{ status: RsvpState; emailSent?: boolean; emailStatus?: string }>("/api/mobile/rsvps", { eventId, guestNames, deliverablesAgreed });
       setRsvps((items) => ({ ...items, [eventId]: result.status }));
-      return result.status;
+      return result;
     },
     cancelRsvp: async (eventId) => {
       await api("/api/mobile/rsvps/cancel", { eventId });
