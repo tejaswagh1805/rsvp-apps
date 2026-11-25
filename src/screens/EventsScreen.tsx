@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
 import { Button, EventImage, formatDate, getDubaiToday } from "../ui";
+import { VenuePickTile } from "./VenueScreen";
 
 const SORTS = ["Soonest", "Newest", "Few places left"] as const;
 
@@ -11,9 +12,10 @@ export function EventsScreen() {
   const t = useTheme();
   const nav = useNavigation<any>();
   const route = useRoute<any>();
-  const { events, rsvps, savedEvents, toggleSavedEvent, refreshEvents } = useStore();
+  const { events, venues, rsvps, savedEvents, dataErrors, toggleSavedEvent, refreshEvents } = useStore();
   const today = getDubaiToday();
   const featuredOnly = route.params?.featuredMode === "topPicks";
+  const featuredVenues = useMemo(() => (venues ?? []).filter((venue) => venue.active !== false && venue.featured), [venues]);
   const sourceEvents = useMemo(() => featuredOnly
     ? events.filter((event) => event.status === "published" && event.topPick === true && (event.endDate || event.date) >= today)
     : events, [events, featuredOnly, today]);
@@ -119,6 +121,10 @@ export function EventsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <Text style={{ fontFamily: fonts.display, fontSize: 31, color: t.text, marginHorizontal: 16, marginTop: 8 }}>{featuredOnly ? "RSVP Top Picks" : "What is on"}</Text>
         <Text style={{ fontFamily: fonts.body, color: t.muted, fontSize: 14, marginHorizontal: 16, marginBottom: 12 }}>{featuredOnly ? "Explore the events hand-picked by RSVP DXB." : "Browse event details, ticket links, reservation contacts and creator opportunities."}</Text>
+        {dataErrors.events ? <View style={{ marginHorizontal: 14, marginBottom: 8 }}>
+          <Text style={{ fontFamily: fonts.body, color: t.primary, fontSize: 13 }}>Could not refresh live events: {dataErrors.events}</Text>
+          <Button title="Retry loading events" variant="outline" style={{ marginTop: 8 }} onPress={() => void refreshEvents().catch(() => undefined)} />
+        </View> : null}
         {featuredOnly ? <Button title="All events" variant="outline" icon="arrow-back" style={{ marginHorizontal: 14, marginBottom: 8 }} onPress={() => nav.setParams({ featuredMode: undefined })} /> : null}
         <Text style={{ fontFamily: fonts.bodyBold, color: t.muted, fontSize: 12, marginLeft: 16, marginTop: 4 }}>CATEGORY</Text>
         {chipRow(categories, category, setCategory)}
@@ -127,8 +133,22 @@ export function EventsScreen() {
         <Text style={{ fontFamily: fonts.bodyBold, color: t.muted, fontSize: 12, marginLeft: 16, marginTop: 4 }}>SORT EVENTS</Text>
         {chipRow([...SORTS], sort, (value) => setSort(value as (typeof SORTS)[number]))}
         <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
-          <Text style={{ fontFamily: fonts.body, color: t.muted, fontSize: 13, marginBottom: 10 }}>{upcoming.length} upcoming {upcoming.length === 1 ? "event" : "events"}</Text>
-          {upcoming.length ? upcoming.map((event) => eventCard(event, false)) : <Text style={{ fontFamily: fonts.body, color: t.muted, paddingVertical: 18 }}>{featuredOnly ? "No RSVP Top Picks are available right now." : `No ${category === "All" ? "upcoming events" : `${category} events`} right now — check back soon.`}</Text>}
+          {featuredOnly ? <>
+            {upcoming.length ? <>
+              <Text style={{ fontFamily: fonts.bodyBold, color: t.primary, fontSize: 12, letterSpacing: 1.5, marginBottom: 10 }}>FEATURED EVENTS · {upcoming.length}</Text>
+              {upcoming.map((event) => eventCard(event, false))}
+            </> : null}
+            {featuredVenues.length ? <>
+              <Text style={{ fontFamily: fonts.bodyBold, color: t.primary, fontSize: 12, letterSpacing: 1.5, marginTop: 18, marginBottom: 10 }}>VENUE TOP PICKS · {featuredVenues.length}</Text>
+              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 14 }}>
+                {featuredVenues.map((venue) => <VenuePickTile key={venue.id} venue={venue} onPress={() => nav.navigate("Venue", { slug: venue.slug })} />)}
+              </ScrollView>
+            </> : null}
+            {!upcoming.length && !featuredVenues.length ? <Text style={{ fontFamily: fonts.body, color: t.muted, paddingVertical: 18 }}>No RSVP Top Picks are available right now.</Text> : null}
+          </> : <>
+            <Text style={{ fontFamily: fonts.body, color: t.muted, fontSize: 13, marginBottom: 10 }}>{upcoming.length} upcoming {upcoming.length === 1 ? "event" : "events"}</Text>
+            {upcoming.length ? upcoming.map((event) => eventCard(event, false)) : <Text style={{ fontFamily: fonts.body, color: t.muted, paddingVertical: 18 }}>{`No ${category === "All" ? "upcoming events" : `${category} events`} right now — check back soon.`}</Text>}
+          </>}
           {past.length ? <>
             <Text style={{ fontFamily: fonts.display, fontSize: 27, color: t.text, marginTop: 24, marginBottom: 4 }}>Past events</Text>
             <Text style={{ fontFamily: fonts.body, color: t.muted, fontSize: 13, marginBottom: 10 }}>{past.length} event recaps</Text>

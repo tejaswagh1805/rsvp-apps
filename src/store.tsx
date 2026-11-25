@@ -4,7 +4,7 @@ import { EVENTS, EventItem, RsvpState } from "./data";
 
 const API_URL = (process.env.EXPO_PUBLIC_RSVP_API_URL || "https://d1f5sjkm09kt76.cloudfront.net").replace(/\/$/, "");
 const KEY = "rsvp-dxb-state-v2";
-const API_TIMEOUT_MS = 12_000;
+const API_TIMEOUT_MS = 30_000;
 let accessToken: string | null = null;
 
 interface MemberProfile {
@@ -111,6 +111,7 @@ interface Store {
   events: EventItem[];
   peopleProfiles: PeopleProfile[] | null;
   venues: Venue[] | null;
+  dataErrors: { events: string; people: string; venues: string };
   member: MemberProfile | null;
   rsvps: Record<string, RsvpState>;
   savedEvents: string[];
@@ -136,24 +137,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<EventItem[]>(EVENTS);
   const [peopleProfiles, setPeopleProfiles] = useState<PeopleProfile[] | null>(null);
   const [venues, setVenues] = useState<Venue[] | null>(null);
+  const [dataErrors, setDataErrors] = useState({ events: "", people: "", venues: "" });
   const [rsvps, setRsvps] = useState<Record<string, RsvpState>>({});
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
 
   const refreshEvents = useCallback(async () => {
-    const items = await api<ApiEvent[]>("/api/mobile/events");
-    setEvents(items.map(mapEvent));
+    try {
+      const items = await api<ApiEvent[]>("/api/mobile/events");
+      if (!Array.isArray(items)) throw new Error("The events service returned an invalid response.");
+      setEvents(items.map(mapEvent));
+      setDataErrors((current) => ({ ...current, events: "" }));
+    } catch (error) {
+      setDataErrors((current) => ({ ...current, events: error instanceof Error ? error.message : "Could not load events." }));
+      throw error;
+    }
   }, []);
 
   const refreshPeopleProfiles = useCallback(async () => {
-    const items = await api<PeopleProfile[]>("/api/mobile/people-profiles");
-    setPeopleProfiles(items);
+    try {
+      const items = await api<PeopleProfile[]>("/api/mobile/people-profiles");
+      if (!Array.isArray(items)) throw new Error("The people service returned an invalid response.");
+      setPeopleProfiles(items);
+      setDataErrors((current) => ({ ...current, people: "" }));
+    } catch (error) {
+      setDataErrors((current) => ({ ...current, people: error instanceof Error ? error.message : "Could not load artist and influencer data." }));
+      throw error;
+    }
   }, []);
 
   const refreshVenues = useCallback(async () => {
-    const items = await api<Venue[]>("/api/mobile/venues");
-    setVenues(items.filter((venue) => venue.active !== false));
+    try {
+      const items = await api<Venue[]>("/api/mobile/venues");
+      if (!Array.isArray(items)) throw new Error("The venues service returned an invalid response.");
+      setVenues(items.filter((venue) => venue.active !== false));
+      setDataErrors((current) => ({ ...current, venues: "" }));
+    } catch (error) {
+      setDataErrors((current) => ({ ...current, venues: error instanceof Error ? error.message : "Could not load venue data." }));
+      throw error;
+    }
   }, []);
-
   const refreshMemberData = async () => {
     const current = await api<ApiMember>("/api/mobile/session");
     let photo: string | undefined;
@@ -288,10 +310,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setMember(null);
       setRsvps({});
     },
+    dataErrors,
     refreshEvents,
     refreshPeopleProfiles,
     refreshVenues,
-  }), [ready, events, peopleProfiles, venues, member, rsvps, savedEvents]);
+  }), [ready, events, peopleProfiles, venues, dataErrors, member, rsvps, savedEvents]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

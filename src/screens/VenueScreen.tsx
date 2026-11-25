@@ -1,23 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { useCallback, useMemo, useState } from "react";
-import { FlatList, Image, Linking, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Image, Linking, Pressable, Text, View } from "react-native";
 import { Venue, useStore } from "../store";
 import { fonts, useTheme } from "../theme";
 import { Button, Card, Eyebrow, H1, H2, P, Screen } from "../ui";
 
-function VenueCard({ venue, onPress }: { venue: Venue; onPress: () => void }) {
+function VenueCard({ venue, onPress, onEnquire }: { venue: Venue; onPress: () => void; onEnquire?: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={{ width: 220, marginRight: 14 }}>
-      <Image source={{ uri: venue.imageUrl }} style={{ width: 220, height: 250, borderRadius: 20, backgroundColor: t.surface }} />
-      <View style={{ paddingTop: 10 }}>
-        <Eyebrow>{venue.category}</Eyebrow>
-        <Text numberOfLines={1} style={{ fontFamily: fonts.display, fontSize: 24, color: t.text, marginTop: 3 }}>{venue.name}</Text>
-        <Text numberOfLines={2} style={{ fontFamily: fonts.body, fontSize: 13, color: t.muted }}>{venue.location}</Text>
-      </View>
-    </Pressable>
+    <View style={{ width: 220, marginRight: 14 }}>
+      <Pressable onPress={onPress} accessibilityRole="button">
+        <Image source={{ uri: venue.imageUrl }} style={{ width: 220, height: 250, borderRadius: 20, backgroundColor: t.surface }} />
+        <View style={{ paddingTop: 10 }}>
+          <Eyebrow>{venue.category}</Eyebrow>
+          <Text numberOfLines={1} style={{ fontFamily: fonts.display, fontSize: 24, color: t.text, marginTop: 3 }}>{venue.name}</Text>
+          <Text numberOfLines={2} style={{ fontFamily: fonts.body, fontSize: 13, color: t.muted }}>{venue.location}</Text>
+        </View>
+      </Pressable>
+      {onEnquire ? <Button title="Enquire now" variant="outline" style={{ marginTop: 10, paddingVertical: 10, paddingHorizontal: 12 }} onPress={onEnquire} /> : null}
+    </View>
   );
+}
+
+function openVenueEnquiry() {
+  void Linking.openURL("https://www.rsvpdxb.com/top-picks").catch(() => Alert.alert("Could not open venue enquiries", "Please try again when you have an internet connection."));
 }
 
 export function VenueDirectoryScreen() {
@@ -39,17 +46,20 @@ export function VenueDirectoryScreen() {
         </Pressable>
       )} /> : null}
       {venues === null ? <P style={{ marginTop: 18 }}>Venue picks are unavailable right now. Please try again later.</P> : filteredVenues.length ? filteredVenues.map((venue) => (
-        <Pressable key={venue.id} onPress={() => nav.navigate("Venue", { slug: venue.slug })} accessibilityRole="button" style={{ marginTop: 14 }}>
-          <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Image source={{ uri: venue.imageUrl }} style={{ width: 82, height: 96, borderRadius: 14, backgroundColor: t.deep }} />
-            <View style={{ flex: 1 }}>
-              <Eyebrow>{venue.category}</Eyebrow>
-              <Text style={{ fontFamily: fonts.display, fontSize: 23, color: t.text, marginTop: 4 }}>{venue.name}</Text>
-              <Text numberOfLines={2} style={{ fontFamily: fonts.body, color: t.muted, marginTop: 4 }}>{venue.location}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={t.primary} />
-          </Card>
-        </Pressable>
+        <View key={venue.id} style={{ marginTop: 14 }}>
+          <Pressable onPress={() => nav.navigate("Venue", { slug: venue.slug })} accessibilityRole="button">
+            <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Image source={{ uri: venue.imageUrl }} style={{ width: 82, height: 96, borderRadius: 14, backgroundColor: t.deep }} />
+              <View style={{ flex: 1 }}>
+                <Eyebrow>{venue.category}</Eyebrow>
+                <Text style={{ fontFamily: fonts.display, fontSize: 23, color: t.text, marginTop: 4 }}>{venue.name}</Text>
+                <Text numberOfLines={2} style={{ fontFamily: fonts.body, color: t.muted, marginTop: 4 }}>{venue.location}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={t.primary} />
+            </Card>
+          </Pressable>
+          <Button title="Enquire now" variant="outline" style={{ marginTop: 8, alignSelf: "flex-start" }} onPress={openVenueEnquiry} />
+        </View>
       )) : <Card style={{ marginTop: 18 }}><P>No venues are featured at the moment.</P></Card>}
     </Screen>
   );
@@ -80,11 +90,12 @@ export function VenueDetailScreen() {
       {venue.offer ? <Card style={{ marginTop: 18 }}><Eyebrow>Good to know</Eyebrow><P style={{ marginTop: 6 }}>{venue.offer}</P></Card> : null}
       {venue.websiteUrl && !venue.websiteUrl.includes("rsvpdxb.com/top-picks") ? <Button title="Visit venue website" icon="open-outline" style={{ marginTop: 20 }} onPress={() => openLink(venue.websiteUrl)} /> : null}
       {venue.moreInfoUrl || (venue.websiteUrl && venue.websiteUrl.includes("rsvpdxb.com/top-picks")) ? <Button title="More information" variant="outline" style={{ marginTop: 10 }} onPress={() => openLink(venue.moreInfoUrl || venue.websiteUrl)} /> : null}
+      {venue.websiteUrl || venue.moreInfoUrl ? <Button title="Enquire now" variant="outline" style={{ marginTop: 10 }} onPress={openVenueEnquiry} /> : null}
       <Button title="All Venue Top Picks" variant="outline" style={{ marginTop: 12 }} onPress={() => nav.navigate("VenueGuide")} />
     </Screen>
   );
 }
 
-export function VenuePickTile({ venue, onPress }: { venue: Venue; onPress: () => void }) {
-  return <VenueCard venue={venue} onPress={onPress} />;
+export function VenuePickTile({ venue, onPress, onEnquire = openVenueEnquiry }: { venue: Venue; onPress: () => void; onEnquire?: () => void }) {
+  return <VenueCard venue={venue} onPress={onPress} onEnquire={venue.websiteUrl || venue.moreInfoUrl ? onEnquire : undefined} />;
 }

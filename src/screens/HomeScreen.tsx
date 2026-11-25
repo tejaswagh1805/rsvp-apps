@@ -3,7 +3,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Image, Pressable, Text, View } from "react-native";
+import { Animated, Dimensions, Image, Modal, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ARTISTS } from "../content";
 import { useStore } from "../store";
@@ -37,9 +37,10 @@ export function HomeScreen() {
   const t = useTheme();
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { events, peopleProfiles, venues, refreshEvents, refreshPeopleProfiles, refreshVenues } = useStore();
+  const { events, peopleProfiles, venues, dataErrors, refreshEvents, refreshPeopleProfiles, refreshVenues } = useStore();
   const scrollY = useRef(new Animated.Value(0)).current;
   const [solid, setSolid] = useState(false);
+  const [galleryEvent, setGalleryEvent] = useState<(typeof events)[number] | null>(null);
   const openTicketAvailability = () => nav.navigate("TicketAvailability");
 
   useFocusEffect(useCallback(() => {
@@ -47,7 +48,8 @@ export function HomeScreen() {
   }, [refreshEvents, refreshPeopleProfiles, refreshVenues]));
 
   const today = getDubaiToday();
-  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent === true && (event.endDate || event.date) >= today), [events, today]);
+  const publishedEvents = useMemo(() => events.filter((event) => event.status === "published" && (event.endDate || event.date) >= today), [events, today]);
+  const latestEvents = useMemo(() => publishedEvents.filter((event) => event.latestEvent !== false), [publishedEvents]);
   const topPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick === true && (event.endDate || event.date) >= today), [events, today]);
   const open = (id: string) => nav.navigate("Event", { id });
 
@@ -79,14 +81,15 @@ export function HomeScreen() {
           <View style={{ marginBottom: 34 }}>
             <Eyebrow>Fresh on the list</Eyebrow>
             <H2 style={{ marginTop: 4 }}>Latest events</H2>
-            {latestEvents.length ? <EventCarousel items={latestEvents} onOpen={open} /> : <P>No latest events are available right now.</P>}
+            {latestEvents.length ? <EventCarousel items={latestEvents} onOpen={open} /> : <P>{dataErrors.events ? `Could not load events: ${dataErrors.events}` : "No latest events are available right now."}</P>}
+            {!latestEvents.length && dataErrors.events ? <Button title="Retry loading events" variant="outline" style={{ marginTop: 8 }} onPress={() => void refreshEvents().catch(() => undefined)} /> : null}
             <Button title="All events" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("Events")} />
           </View>
 
           <View style={{ marginBottom: 28 }}>
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>RSVP top picks</H2>
-            {topPicks.length ? <EventCarousel items={topPicks} onOpen={open} /> : <P>No RSVP Top Picks have been selected yet.</P>}
+            {topPicks.length ? <EventCarousel items={topPicks} onOpen={open} /> : <P>{dataErrors.events ? `Could not load top picks: ${dataErrors.events}` : "No RSVP Top Picks have been selected yet."}</P>}
             <Button title="All RSVP Top Picks" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("Events", { featuredMode: "topPicks" })} />
           </View>
 
@@ -101,8 +104,8 @@ export function HomeScreen() {
 
           <H2>Latest events gallery</H2>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {latestEvents.slice(0, 6).map((ev) => (
-              <Pressable key={ev.id} onPress={() => open(ev.id)} style={{ width: (W - 46) / 2 }}>
+            {publishedEvents.slice(0, 6).map((ev) => (
+              <Pressable key={ev.id} onPress={() => setGalleryEvent(ev)} accessibilityRole="button" accessibilityLabel={`View ${ev.title} gallery image`} style={{ width: (W - 46) / 2 }}>
                 <EventImage event={ev} style={{ width: "100%", height: 150, borderRadius: 16 }} />
               </Pressable>
             ))}
@@ -132,6 +135,17 @@ export function HomeScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+      <Modal visible={Boolean(galleryEvent)} transparent animationType="fade" onRequestClose={() => setGalleryEvent(null)}>
+        <Pressable onPress={() => setGalleryEvent(null)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.88)", justifyContent: "center", padding: 20 }}>
+          {galleryEvent ? <View style={{ alignItems: "center" }}>
+            <Pressable onPress={(event) => event.stopPropagation()} style={{ width: "100%", alignItems: "center" }}>
+              <EventImage event={galleryEvent} style={{ width: "100%", height: H * 0.62, borderRadius: 16 }} resizeMode="contain" />
+              <Text style={{ fontFamily: fonts.display, fontSize: 25, color: "#FFF7EC", marginTop: 16, textAlign: "center" }}>{galleryEvent.title}</Text>
+              <Button title="View event" icon="arrow-forward" style={{ marginTop: 14 }} onPress={() => { const id = galleryEvent.id; setGalleryEvent(null); open(id); }} />
+            </Pressable>
+          </View> : null}
+        </Pressable>
+      </Modal>
     </View>
   );
 }
