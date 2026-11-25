@@ -113,6 +113,8 @@ interface Store {
   venues: Venue[] | null;
   member: MemberProfile | null;
   rsvps: Record<string, RsvpState>;
+  savedEvents: string[];
+  toggleSavedEvent: (eventId: string) => void;
   signIn: (email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string; track: string }) => Promise<void>;
@@ -135,6 +137,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [peopleProfiles, setPeopleProfiles] = useState<PeopleProfile[] | null>(null);
   const [venues, setVenues] = useState<Venue[] | null>(null);
   const [rsvps, setRsvps] = useState<Record<string, RsvpState>>({});
+  const [savedEvents, setSavedEvents] = useState<string[]>([]);
 
   const refreshEvents = useCallback(async () => {
     const items = await api<ApiEvent[]>("/api/mobile/events");
@@ -176,8 +179,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem(`${KEY}-token`).catch(() => null),
           AsyncStorage.getItem(`${KEY}-profile`).catch(() => null),
         ]);
+        const storedSavedEvents = await AsyncStorage.getItem(`${KEY}-saved-events`).catch(() => null);
         if (!active) return;
         accessToken = token;
+        if (storedSavedEvents) {
+          try {
+            const parsed = JSON.parse(storedSavedEvents);
+            if (Array.isArray(parsed)) setSavedEvents(parsed.filter((id): id is string => typeof id === "string"));
+          } catch {
+            // Ignore a damaged saved-events cache.
+          }
+        }
         if (token && savedProfile) {
           try {
             const cached = JSON.parse(savedProfile) as Partial<MemberProfile>;
@@ -211,12 +223,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (ready) void AsyncStorage.setItem(`${KEY}-saved-events`, JSON.stringify(savedEvents));
+  }, [ready, savedEvents]);
+
+  useEffect(() => {
     if (ready && member) void AsyncStorage.setItem(`${KEY}-profile`, JSON.stringify(member));
     if (ready && !member) void AsyncStorage.removeItem(`${KEY}-profile`);
   }, [member, ready]);
 
   const value = useMemo<Store>(() => ({
-    ready, events, peopleProfiles, venues, member, rsvps,
+    ready, events, peopleProfiles, venues, member, rsvps, savedEvents,
+    toggleSavedEvent: (eventId) => setSavedEvents((items) => items.includes(eventId) ? items.filter((id) => id !== eventId) : [...items, eventId]),
     signIn: async (email, password) => {
       const result = await api<ApiMember>("/api/mobile/sign-in", { email, password });
       if (!result.accessToken) throw new Error("The server did not return a mobile session.");
@@ -274,7 +291,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     refreshEvents,
     refreshPeopleProfiles,
     refreshVenues,
-  }), [ready, events, peopleProfiles, venues, member, rsvps]);
+  }), [ready, events, peopleProfiles, venues, member, rsvps, savedEvents]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

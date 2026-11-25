@@ -47,8 +47,8 @@ export function HomeScreen() {
   }, [refreshEvents, refreshPeopleProfiles, refreshVenues]));
 
   const today = getDubaiToday();
-  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent !== false && (event.endDate || event.date) >= today), [events, today]);
-  const topPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick && (event.endDate || event.date) >= today), [events, today]);
+  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent === true && (event.endDate || event.date) >= today), [events, today]);
+  const topPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick === true && (event.endDate || event.date) >= today), [events, today]);
   const open = (id: string) => nav.navigate("Event", { id });
 
   return (
@@ -66,6 +66,7 @@ export function HomeScreen() {
       </View>
 
       <Animated.ScrollView
+        nestedScrollEnabled
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
           useNativeDriver: true,
@@ -79,18 +80,20 @@ export function HomeScreen() {
             <Eyebrow>Fresh on the list</Eyebrow>
             <H2 style={{ marginTop: 4 }}>Latest events</H2>
             {latestEvents.length ? <EventCarousel items={latestEvents} onOpen={open} /> : <P>No latest events are available right now.</P>}
+            <Button title="All events" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("Events")} />
           </View>
 
           <View style={{ marginBottom: 28 }}>
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>RSVP top picks</H2>
             {topPicks.length ? <EventCarousel items={topPicks} onOpen={open} /> : <P>No RSVP Top Picks have been selected yet.</P>}
+            <Button title="All RSVP Top Picks" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("Events", { featuredMode: "topPicks" })} />
           </View>
 
           {venues?.some((venue) => venue.featured) ? <View style={{ marginBottom: 28 }}>
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>Venue Top Picks</H2>
-            <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
+            <Animated.ScrollView horizontal nestedScrollEnabled directionalLockEnabled showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
               {venues.filter((venue) => venue.featured).map((venue) => <VenuePickTile key={venue.id} venue={venue} onPress={() => nav.navigate("Venue", { slug: venue.slug })} />)}
             </Animated.ScrollView>
             <Button title="Explore all venues" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("VenueGuide")} />

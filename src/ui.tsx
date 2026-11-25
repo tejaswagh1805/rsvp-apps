@@ -135,15 +135,20 @@ export function getLastMinuteEvent(events: EventItem[]) {
 export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress: () => void; width?: number }) {
   const t = useTheme();
   return (
-    <View style={{ width, marginRight: 14 }}>
-      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`View event: ${ev.title}`} style={({ pressed }) => ({ opacity: pressed ? 0.86 : 1 })}>
-        <EventImage event={ev} style={{ width, height: width * 1.2, borderRadius: 20 }} />
-        <View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, { justifyContent: "flex-end", padding: 12, borderRadius: 20, backgroundColor: "rgba(46,26,11,0.25)" }]}>
-          <View style={{ alignSelf: "flex-start", backgroundColor: t.primary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 6 }}>
-            <Text style={{ color: t.primaryText, fontFamily: fonts.bodyBold, fontSize: 11 }}>{ev.category}</Text>
+    <View style={{ width, marginRight: 14, borderRadius: 20, overflow: "hidden", backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, elevation: 3 }}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`View event: ${ev.title}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+        <View style={{ width, height: 166, backgroundColor: "#211A14", alignItems: "center", justifyContent: "center" }}>
+          <EventImage event={ev} style={{ width: width - 14, height: 154 }} resizeMode="contain" />
+          <View style={{ position: "absolute", top: 10, left: 10, backgroundColor: t.primary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 }}>
+            <Text numberOfLines={1} style={{ color: t.primaryText, fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.5 }}>{ev.category.toUpperCase()}</Text>
           </View>
-          <Text style={{ color: "#FFF7EC", fontFamily: fonts.display, fontSize: 24, lineHeight: 24 }}>{ev.title}</Text>
-          <Text style={{ color: "#F2DFC3", fontFamily: fonts.body, fontSize: 12 }}>{formatDate(ev.date)} · {ev.area}</Text>
+          <View style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(31,18,8,0.72)", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="arrow-forward" size={15} color="#FFF7EC" />
+          </View>
+        </View>
+        <View style={{ minHeight: 94, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 11, justifyContent: "center" }}>
+          <Text numberOfLines={2} ellipsizeMode="tail" style={{ color: t.text, fontFamily: fonts.display, fontSize: 19, lineHeight: 22 }}>{ev.title}</Text>
+          <Text numberOfLines={1} style={{ color: t.muted, fontFamily: fonts.body, fontSize: 11, marginTop: 4 }}>{formatDate(ev.date)} · {ev.area || ev.brand}</Text>
         </View>
       </Pressable>
     </View>
@@ -152,8 +157,67 @@ export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress
 
 /** Native swipe row keeps event cards stationary while a user taps them. */
 export function EventCarousel({ items, onOpen }: { items: EventItem[]; onOpen: (id: string) => void }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const activeIndex = useRef(0);
+  const autoAdvance = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stride = 234;
+
+  useEffect(() => {
+    activeIndex.current = 0;
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+    const scheduleNext = () => {
+      if (autoAdvance.current) clearTimeout(autoAdvance.current);
+      if (items.length < 3) return;
+      autoAdvance.current = setTimeout(() => {
+        const nextIndex = (activeIndex.current + 1) % items.length;
+        activeIndex.current = nextIndex;
+        scrollRef.current?.scrollTo({ x: nextIndex * stride, animated: nextIndex !== 0 });
+        scheduleNext();
+      }, 4000);
+    };
+    scheduleNext();
+    return () => { if (autoAdvance.current) clearTimeout(autoAdvance.current); };
+  }, [items, stride]);
+
+  const stopAutoAdvance = () => {
+    if (autoAdvance.current) clearTimeout(autoAdvance.current);
+    autoAdvance.current = null;
+  };
+  const resumeAutoAdvance = () => {
+    stopAutoAdvance();
+    if (items.length < 3) return;
+    autoAdvance.current = setTimeout(() => {
+      const nextIndex = (activeIndex.current + 1) % items.length;
+      activeIndex.current = nextIndex;
+      scrollRef.current?.scrollTo({ x: nextIndex * stride, animated: nextIndex !== 0 });
+      resumeAutoAdvance();
+    }, 4000);
+  };
+
   return (
-    <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      nestedScrollEnabled
+      directionalLockEnabled
+      alwaysBounceHorizontal={false}
+      snapToInterval={stride}
+      snapToAlignment="start"
+      decelerationRate="fast"
+      showsHorizontalScrollIndicator={false}
+      scrollEventThrottle={16}
+      style={{ marginHorizontal: -18 }}
+      contentContainerStyle={{ paddingHorizontal: 18 }}
+      onScrollBeginDrag={stopAutoAdvance}
+      onMomentumScrollEnd={(event) => {
+        activeIndex.current = Math.round(event.nativeEvent.contentOffset.x / stride) % Math.max(items.length, 1);
+        resumeAutoAdvance();
+      }}
+      onScrollEndDrag={(event) => {
+        activeIndex.current = Math.round(event.nativeEvent.contentOffset.x / stride) % Math.max(items.length, 1);
+        resumeAutoAdvance();
+      }}
+    >
       {items.map((ev) => <EventTile key={ev.id} ev={ev} onPress={() => onOpen(ev.id)} />)}
     </ScrollView>
   );
