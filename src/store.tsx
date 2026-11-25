@@ -23,7 +23,7 @@ interface MemberProfile {
 }
 
 type ApiMember = { id: string; name: string; email: string; track: string; rank: string; points: number; city?: string; mobile?: string; handle?: string; followers?: number; memberNumber?: number; accessToken?: string };
-type ApiEvent = Omit<EventItem, "image"> & { image?: string; imageGallery?: string[]; imageData?: string; video?: string; videoUrlList?: string[] };
+type ApiEvent = Omit<EventItem, "image"> & { image?: string; imageGallery?: string[]; imageData?: string; video?: string; videoUrlList?: string[]; videourllist?: string[] };
 export type PeopleProfile = {
   id: string;
   category: string;
@@ -72,8 +72,9 @@ function mapEvent(item: ApiEvent): EventItem {
     ? { uri: remoteImage }
     : EVENT_IMAGES[item.id] ?? EVENT_IMAGES["atlantis-chef-table"];
   const imageFallback = EVENT_IMAGES[item.id] ?? EVENT_IMAGES["atlantis-chef-table"];
-  const videos = item.videoUrlList ?? (item.video ? [item.video] : []);
-  return { ...item, endDate: item.endDate ?? item.date, image, imageFallback, videos } as EventItem;
+  const images = item.imageGallery?.length ? item.imageGallery : item.imageData ? [item.imageData] : item.images ?? [];
+  const videos = item.videoUrlList ?? item.videourllist ?? (item.video ? [item.video] : []);
+  return { ...item, endDate: item.endDate ?? item.date, image, imageFallback, images, videos } as EventItem;
 }
 
 async function api<T>(path: string, input?: unknown): Promise<T> {

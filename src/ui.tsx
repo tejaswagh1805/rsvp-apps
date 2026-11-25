@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated, Easing, Image, ImageStyle, ImageSourcePropType, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  Animated, Image, ImageStyle, ImageSourcePropType, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from "react-native";
 import { EventItem } from "./data";
 import { fonts, useTheme } from "./theme";
@@ -131,14 +131,12 @@ export function getLastMinuteEvent(events: EventItem[]) {
   return upcoming[0] ?? available.sort((a, b) => a.date.localeCompare(b.date))[0] ?? events[0];
 }
 
-/** Event tile with press zoom + highlight. */
+/** Event tile used in the swipeable home event rows. */
 export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress: () => void; width?: number }) {
   const t = useTheme();
-  const scale = useRef(new Animated.Value(1)).current;
-  const to = (v: number) => Animated.spring(scale, { toValue: v, useNativeDriver: true, friction: 6 }).start();
   return (
-    <Animated.View style={{ width, marginRight: 14, transform: [{ scale }] }}>
-      <Pressable onPress={onPress} onPressIn={() => to(1.03)} onPressOut={() => to(1)}>
+    <View style={{ width, marginRight: 14 }}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`View event: ${ev.title}`} style={({ pressed }) => ({ opacity: pressed ? 0.86 : 1 })}>
         <EventImage event={ev} style={{ width, height: width * 1.2, borderRadius: 20 }} />
         <View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, { justifyContent: "flex-end", padding: 12, borderRadius: 20, backgroundColor: "rgba(46,26,11,0.25)" }]}>
           <View style={{ alignSelf: "flex-start", backgroundColor: t.primary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 6 }}>
@@ -148,49 +146,16 @@ export function EventTile({ ev, onPress, width = 220 }: { ev: EventItem; onPress
           <Text style={{ color: "#F2DFC3", fontFamily: fonts.body, fontSize: 12 }}>{formatDate(ev.date)} · {ev.area}</Text>
         </View>
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 
-/** Endless auto-scrolling row. direction "left" = right-to-left movement. */
-export function Marquee({ items, direction, onOpen }: { items: EventItem[]; direction: "left" | "right"; onOpen: (id: string) => void }) {
-  const tile = 220 + 14;
-  const rowWidth = tile * items.length;
-  const x = useRef(new Animated.Value(direction === "left" ? 0 : -rowWidth)).current;
-  const animation = useRef<Animated.CompositeAnimation | null>(null);
-  const [paused, setPaused] = useState(false);
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.timing(x, {
-        toValue: direction === "left" ? -rowWidth : 0,
-        duration: items.length * 3500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    animation.current = anim;
-    anim.start();
-    return () => {
-      anim.stop();
-      animation.current = null;
-    };
-  }, [rowWidth, direction]);
-  useEffect(() => {
-    if (paused) animation.current?.stop();
-    else animation.current?.start();
-  }, [paused]);
-  const doubled = [...items, ...items];
+/** Native swipe row keeps event cards stationary while a user taps them. */
+export function EventCarousel({ items, onOpen }: { items: EventItem[]; onOpen: (id: string) => void }) {
   return (
-    <View
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
-      onTouchCancel={() => setPaused(false)}
-      style={{ overflow: "hidden", marginHorizontal: -18 }}
-    >
-      <Animated.View style={{ flexDirection: "row", transform: [{ translateX: x }] }}>
-        {doubled.map((ev, i) => <EventTile key={ev.id + i} ev={ev} onPress={() => onOpen(ev.id)} />)}
-      </Animated.View>
-    </View>
+    <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
+      {items.map((ev) => <EventTile key={ev.id} ev={ev} onPress={() => onOpen(ev.id)} />)}
+    </ScrollView>
   );
 }
 

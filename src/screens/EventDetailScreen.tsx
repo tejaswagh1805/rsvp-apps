@@ -1,19 +1,45 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
-import React from "react";
-import { Alert, Linking, Text, View } from "react-native";
+import { useVideoPlayer, VideoView } from "expo-video";
+import React, { useEffect, useState } from "react";
+import { Alert, Linking, ScrollView, Text, View } from "react-native";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
 import { Button, Card, Eyebrow, EventImage, Field, H1, H2, P, Screen, formatDate, getDubaiToday, shareEvent } from "../ui";
+
+function EventVideo({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri);
+  return <VideoView player={player} style={{ width: "100%", height: 230, borderRadius: 18, marginTop: 12 }} contentFit="contain" nativeControls />;
+}
 
 export function EventDetailScreen() {
   const t = useTheme();
   const nav = useNavigation<any>();
   const { params } = useRoute<any>();
-  const { events, rsvps, member, rsvp, cancelRsvp } = useStore();
-  const [guestNames, setGuestNames] = React.useState<string[]>([]);
-  const [guestName, setGuestName] = React.useState("");
+  const { events, rsvps, member, rsvp, cancelRsvp, refreshEvents } = useStore();
+  const [guestNames, setGuestNames] = useState<string[]>([]);
+  const [guestName, setGuestName] = useState("");
+  const [retryLookup, setRetryLookup] = useState(0);
+  const [lookupState, setLookupState] = useState<"loading" | "loaded" | "error">("loading");
   const ev = events.find((e) => e.id === params.id);
-  if (!ev) return <Screen><P>Event not found.</P></Screen>;
+  useEffect(() => {
+    let active = true;
+    if (ev) {
+      setLookupState("loaded");
+      return () => { active = false; };
+    }
+    setLookupState("loading");
+    void refreshEvents()
+      .then(() => { if (active) setLookupState("loaded"); })
+      .catch(() => { if (active) setLookupState("error"); });
+    return () => { active = false; };
+  }, [params.id, refreshEvents, retryLookup]);
+  if (!ev) return (
+    <Screen>
+      <H1>{lookupState === "loading" ? "Loading event" : lookupState === "error" ? "Could not load event" : "Event not found"}</H1>
+      <P>{lookupState === "loading" ? "Getting the latest event details…" : lookupState === "error" ? "Check your connection and try again." : "This event may no longer be published or available."}</P>
+      {lookupState !== "loading" ? <Button title="Try again" style={{ marginTop: 18 }} onPress={() => setRetryLookup((value) => value + 1)} /> : null}
+    </Screen>
+  );
   const state = rsvps[ev.id] ?? "none";
   const spots = Math.max(ev.capacity - ev.confirmed, 0);
   const ended = ev.status === "closed" || (ev.endDate || ev.date) < getDubaiToday();
@@ -80,10 +106,21 @@ export function EventDetailScreen() {
       <P>{ev.whoIsInvited}</P>
       <H2>Host note</H2>
       <P>{ev.hostNote}</P>
+      {ev.images && ev.images.length > 1 ? <>
+        <H2>Photos</H2>
+        <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+          {ev.images.map((image, index) => <EventImage key={`${ev.id}-photo-${index}`} event={{ ...ev, image: { uri: image } }} style={{ width: 190, height: 150, borderRadius: 16 }} />)}
+        </ScrollView>
+      </> : null}
+      {ev.videos?.length ? <>
+        <H2>Event video</H2>
+        {ev.videos.map((video, index) => <EventVideo key={`${ev.id}-video-${index}`} uri={video} />)}
+      </> : null}
       {ev.creatorPassNote ? <><H2>Creator pass</H2><P>{ev.creatorPassNote}</P></> : null}
       {ev.influencerDeliverables ? <><H2>Creator deliverables</H2><P>{ev.influencerDeliverables}</P></> : null}
       {typeof ev.ticketPrice === "number" && ev.ticketPrice > 0 ? <><H2>Ticket price</H2><P>{ev.ticketCurrency || "AED"} {ev.ticketPrice}</P></> : null}
       {ev.ticketUrl ? <Button title={ev.actionLabel || "Get tickets"} icon="open-outline" style={{ marginTop: 14 }} onPress={() => void Linking.openURL(ev.ticketUrl!).catch(() => Alert.alert("Could not open link", "Please try again later."))} /> : null}
+      {ev.reservationPhone ? <Button title="Call to reserve" variant="outline" icon="call-outline" style={{ marginTop: 10 }} onPress={() => void Linking.openURL(`tel:${ev.reservationPhone}`).catch(() => Alert.alert("Could not start a call", "Please try again later."))} /> : null}
       {ev.creatorPassFormUrl ? <Button title="Apply for a creator pass" variant="outline" style={{ marginTop: 10 }} onPress={() => void Linking.openURL(ev.creatorPassFormUrl!).catch(() => Alert.alert("Could not open form", "Please try again later."))} /> : null}
       {ev.mapUrl ? <Button title="Open event location" variant="outline" icon="map-outline" style={{ marginTop: 10 }} onPress={() => void Linking.openURL(ev.mapUrl!).catch(() => Alert.alert("Could not open map", "Please check the event location."))} /> : null}
     </Screen>

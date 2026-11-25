@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ARTISTS } from "../content";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
-import { Button, Eyebrow, EventImage, H2, Marquee, P, Pulse } from "../ui";
+import { Button, Eyebrow, EventCarousel, EventImage, getDubaiToday, H2, P, Pulse } from "../ui";
 import { ArtistCard } from "./ArtistsScreen";
 import { VenuePickTile } from "./VenueScreen";
 
@@ -46,10 +46,9 @@ export function HomeScreen() {
     void Promise.all([refreshEvents().catch(() => undefined), refreshPeopleProfiles().catch(() => undefined), refreshVenues().catch(() => undefined)]);
   }, [refreshEvents, refreshPeopleProfiles, refreshVenues]));
 
-  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent !== false), [events]);
-  const fifteen = useMemo(() => latestEvents.length ? Array.from({ length: 15 }, (_, i) => ({ ...latestEvents[i % latestEvents.length], id: latestEvents[i % latestEvents.length].id })) : [], [latestEvents]);
-  const selectedPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick), [events]);
-  const topPicks = useMemo(() => selectedPicks.length ? Array.from({ length: 15 }, (_, i) => ({ ...selectedPicks[i % selectedPicks.length], id: selectedPicks[i % selectedPicks.length].id })) : [], [selectedPicks]);
+  const today = getDubaiToday();
+  const latestEvents = useMemo(() => events.filter((event) => event.status === "published" && event.latestEvent !== false && (event.endDate || event.date) >= today), [events, today]);
+  const topPicks = useMemo(() => events.filter((event) => event.status === "published" && event.topPick && (event.endDate || event.date) >= today), [events, today]);
   const open = (id: string) => nav.navigate("Event", { id });
 
   return (
@@ -79,13 +78,13 @@ export function HomeScreen() {
           <View style={{ marginBottom: 34 }}>
             <Eyebrow>Fresh on the list</Eyebrow>
             <H2 style={{ marginTop: 4 }}>Latest events</H2>
-            {fifteen.length ? <Marquee items={fifteen} direction="left" onOpen={open} /> : <P>No latest events are available right now.</P>}
+            {latestEvents.length ? <EventCarousel items={latestEvents} onOpen={open} /> : <P>No latest events are available right now.</P>}
           </View>
 
           <View style={{ marginBottom: 28 }}>
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>RSVP top picks</H2>
-            {topPicks.length ? <Marquee items={topPicks} direction="right" onOpen={open} /> : <P>No RSVP Top Picks have been selected yet.</P>}
+            {topPicks.length ? <EventCarousel items={topPicks} onOpen={open} /> : <P>No RSVP Top Picks have been selected yet.</P>}
           </View>
 
           {venues?.some((venue) => venue.featured) ? <View style={{ marginBottom: 28 }}>
@@ -99,7 +98,7 @@ export function HomeScreen() {
 
           <H2>Latest events gallery</H2>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {events.slice(0, 6).map((ev) => (
+            {latestEvents.slice(0, 6).map((ev) => (
               <Pressable key={ev.id} onPress={() => open(ev.id)} style={{ width: (W - 46) / 2 }}>
                 <EventImage event={ev} style={{ width: "100%", height: 150, borderRadius: 16 }} />
               </Pressable>
