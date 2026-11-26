@@ -3,6 +3,20 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
     "preview": {
       "channel": "preview",
       "distribution": "internal",
@@ -11,6 +25,12 @@
       },
       "android": {
         "buildType": "apk"
+      }
+    },
+    "preview-phones": {
+      "extends": "preview",
+      "android": {
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
       }
     },
     "preview-simulator": {
