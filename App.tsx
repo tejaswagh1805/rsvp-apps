@@ -16,7 +16,9 @@ import { EventsScreen } from "./src/screens/EventsScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { InfoScreen } from "./src/screens/InfoScreen";
 import { MeScreen } from "./src/screens/MeScreen";
+import { MoreScreen } from "./src/screens/MoreScreen";
 import { OffersScreen } from "./src/screens/OffersScreen";
+import { TopPicksScreen } from "./src/screens/TopPicksScreen";
 import { TicketAvailabilityScreen } from "./src/screens/TicketAvailabilityScreen";
 import { VenueDetailScreen, VenueDirectoryScreen } from "./src/screens/VenueScreen";
 import { StoreProvider, useStore } from "./src/store";
@@ -34,6 +36,7 @@ export type RootStack = {
   Contact: undefined;
   TicketAvailability: undefined;
   VenueGuide: undefined;
+  TopPicks: undefined;
   Venue: { slug: string };
 };
 
@@ -47,6 +50,7 @@ function Tabs() {
     Events: ["calendar", "calendar-outline"],
     Offers: ["ticket", "ticket-outline"],
     Account: ["person-circle", "person-circle-outline"],
+    More: ["ellipsis-horizontal-circle", "ellipsis-horizontal-circle-outline"],
   };
   return (
     <Tab.Navigator
@@ -65,6 +69,7 @@ function Tabs() {
       <Tab.Screen name="Events" component={EventsScreen} />
       <Tab.Screen name="Offers" component={OffersScreen} options={{ title: "Tickets & Offers" }} />
       <Tab.Screen name="Account" component={MeScreen} options={{ title: "My account" }} />
+      <Tab.Screen name="More" component={MoreScreen} options={{ title: "Explore more" }} />
     </Tab.Navigator>
   );
 }
@@ -82,6 +87,7 @@ function Root() {
         <Stack.Screen name="Event" component={EventDetailScreen} options={{ title: "Event" }} />
         <Stack.Screen name="TicketAvailability" component={TicketAvailabilityScreen} options={{ title: "Available tickets" }} />
         <Stack.Screen name="VenueGuide" component={VenueDirectoryScreen} options={{ title: "Venue Top Picks" }} />
+        <Stack.Screen name="TopPicks" component={TopPicksScreen} options={{ title: "RSVP Top Picks" }} />
         <Stack.Screen name="Venue" component={VenueDetailScreen} options={{ title: "Venue" }} />
         <Stack.Screen name="Artists" component={ArtistsScreen} options={{ title: "Artists & Influencers" }} />
         <Stack.Screen name="SignIn" component={AuthScreens.SignIn} options={{ title: "Member sign in" }} />

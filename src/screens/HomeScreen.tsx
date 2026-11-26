@@ -4,6 +4,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Animated, Dimensions, Image, Modal, Pressable, Text, View } from "react-native";
+import { Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ARTISTS } from "../content";
 import { useStore } from "../store";
@@ -90,7 +91,7 @@ export function HomeScreen() {
             <Eyebrow>Hand-picked</Eyebrow>
             <H2 style={{ marginTop: 4 }}>RSVP top picks</H2>
             {topPicks.length ? <EventCarousel items={topPicks} onOpen={open} /> : <P>{dataErrors.events ? `Could not load top picks: ${dataErrors.events}` : "No RSVP Top Picks have been selected yet."}</P>}
-            <Button title="All RSVP Top Picks" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("Events", { featuredMode: "topPicks" })} />
+            <Button title="All RSVP Top Picks" variant="outline" icon="arrow-forward" style={{ marginTop: 12 }} onPress={() => nav.navigate("TopPicks")} />
           </View>
 
           {venues?.some((venue) => venue.featured) ? <View style={{ marginBottom: 28 }}>
@@ -110,6 +111,7 @@ export function HomeScreen() {
               </Pressable>
             ))}
           </View>
+          <Button title="View full gallery" variant="outline" icon="images-outline" style={{ marginTop: 12, marginBottom: 22 }} onPress={() => void Linking.openURL("https://www.rsvpdxb.com/gallery").catch(() => undefined)} />
 
           <Eyebrow>The people behind the energy</Eyebrow>
           <H2 style={{ marginTop: 4 }}>Artist's & Influencers</H2>

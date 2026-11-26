@@ -116,6 +116,7 @@ interface Store {
   rsvps: Record<string, RsvpState>;
   savedEvents: string[];
   toggleSavedEvent: (eventId: string) => void;
+  submitVenueEnquiry: (input: { venueId: string; name: string; email: string; phone?: string; consent: boolean }) => Promise<{ redirectUrl: string; notificationSent: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string; track: string }) => Promise<void>;
@@ -256,6 +257,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Store>(() => ({
     ready, events, peopleProfiles, venues, member, rsvps, savedEvents,
     toggleSavedEvent: (eventId) => setSavedEvents((items) => items.includes(eventId) ? items.filter((id) => id !== eventId) : [...items, eventId]),
+    submitVenueEnquiry: (input) => api<{ redirectUrl: string; notificationSent: boolean }>("/api/mobile/venue-enquiries", input),
     signIn: async (email, password) => {
       const result = await api<ApiMember>("/api/mobile/sign-in", { email, password });
       if (!result.accessToken) throw new Error("The server did not return a mobile session.");

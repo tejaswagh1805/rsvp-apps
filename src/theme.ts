@@ -1,5 +1,3 @@
-import { useColorScheme } from "react-native";
-
 // Bronze, warm sand and deep bronze-brown — same palette as the website.
 const light = {
   bg: "#F2DFC3",
@@ -24,7 +22,7 @@ const dark: typeof light = {
 
 export type Theme = typeof light;
 export function useTheme(): Theme {
-  return useColorScheme() === "dark" ? dark : light;
+  return light;
 }
 
 export const fonts = {

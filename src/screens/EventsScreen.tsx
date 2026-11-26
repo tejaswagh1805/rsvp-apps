@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { useStore } from "../store";
 import { fonts, useTheme } from "../theme";
 import { Button, EventImage, formatDate, getDubaiToday } from "../ui";
@@ -108,7 +108,7 @@ export function EventsScreen() {
             <Button title="Request RSVP" style={{ flex: 1 }} onPress={() => nav.navigate("Event", { id: event.id })} />
           </>}
         </View>
-        {!isPastEvent && event.creatorPassFormUrl ? <Pressable onPress={() => nav.navigate("Event", { id: event.id })} style={{ paddingHorizontal: 16, paddingBottom: 14 }} accessibilityRole="button" accessibilityLabel="Open creator pass request">
+        {!isPastEvent && event.creatorPassFormUrl ? <Pressable onPress={() => void Linking.openURL(event.creatorPassFormUrl!).catch(() => undefined)} style={{ paddingHorizontal: 16, paddingBottom: 14 }} accessibilityRole="button" accessibilityLabel="Open creator pass request">
           <Text style={{ color: t.primary, fontFamily: fonts.bodyBold }}>Request a creator pass  ↗</Text>
           <Text style={{ color: t.muted, fontFamily: fonts.body, fontSize: 12, marginTop: 2 }}>Send your details for team review</Text>
         </Pressable> : null}
@@ -125,7 +125,7 @@ export function EventsScreen() {
           <Text style={{ fontFamily: fonts.body, color: t.primary, fontSize: 13 }}>Could not refresh live events: {dataErrors.events}</Text>
           <Button title="Retry loading events" variant="outline" style={{ marginTop: 8 }} onPress={() => void refreshEvents().catch(() => undefined)} />
         </View> : null}
-        {featuredOnly ? <Button title="All events" variant="outline" icon="arrow-back" style={{ marginHorizontal: 14, marginBottom: 8 }} onPress={() => nav.setParams({ featuredMode: undefined })} /> : null}
+        {featuredOnly ? <Button title="All events" variant="outline" icon="arrow-back" style={{ marginHorizontal: 14, marginBottom: 8 }} onPress={() => nav.navigate("Events", { featuredMode: undefined })} /> : null}
         <Text style={{ fontFamily: fonts.bodyBold, color: t.muted, fontSize: 12, marginLeft: 16, marginTop: 4 }}>CATEGORY</Text>
         {chipRow(categories, category, setCategory)}
         <Text style={{ fontFamily: fonts.bodyBold, color: t.muted, fontSize: 12, marginLeft: 16, marginTop: 4 }}>AREA</Text>
